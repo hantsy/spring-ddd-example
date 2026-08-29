@@ -8,8 +8,7 @@ import com.example.library.catalog.domain.Isbn;
 import com.github.tomakehurst.wiremock.http.Fault;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
+import org.springframework.web.client.ResourceAccessException;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
@@ -104,6 +103,6 @@ class OpenLibraryBookSearchServiceTest {
         assertThatThrownBy(() -> service.search(new Isbn(UNKNOWN_ISBN)))
                 .isInstanceOf(BookSearchException.class)
                 .hasMessageContaining(UNKNOWN_ISBN)
-                .hasCauseInstanceOf(IOException.class);
+                .hasCauseInstanceOf(ResourceAccessException.class);
     }
 }

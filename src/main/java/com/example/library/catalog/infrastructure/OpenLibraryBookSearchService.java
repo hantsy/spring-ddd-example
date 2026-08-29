@@ -5,23 +5,24 @@ import com.example.library.catalog.domain.BookNotFoundException;
 import com.example.library.catalog.domain.BookSearchException;
 import com.example.library.catalog.domain.BookSearchService;
 import com.example.library.catalog.domain.Isbn;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestClientResponseException;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.json.JsonMapper;
 
-import java.io.IOException;
 import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
  * Open Library adapter implementing the {@link BookSearchService} domain port,
- * backed by the JDK HTTP client and Jackson. It replaces the JAX-RS client of the
- * original Jakarta EE implementation.
+ * backed by Spring's {@link RestClient} and Jackson 3. It replaces the JAX-RS
+ * client of the original Jakarta EE implementation.
  */
 @Component
 public class OpenLibraryBookSearchService implements BookSearchService {
@@ -33,8 +34,8 @@ public class OpenLibraryBookSearchService implements BookSearchService {
     /** Maximum number of HTTP redirects to follow before giving up. */
     private static final int MAX_REDIRECTS = 5;
 
-    private final HttpClient client;
-    private final ObjectMapper objectMapper;
+    private final RestClient restClient;
+    private final JsonMapper objectMapper;
     private final String baseUrl;
 
     public OpenLibraryBookSearchService() {
@@ -47,11 +48,12 @@ public class OpenLibraryBookSearchService implements BookSearchService {
      * the base URL is the WireMock server address.
      */
     OpenLibraryBookSearchService(String baseUrl) {
-        this.client = HttpClient.newBuilder()
-                .followRedirects(HttpClient.Redirect.NEVER)
+        this.restClient = RestClient.builder()
+                .requestFactory(new JdkClientHttpRequestFactory())
                 .build();
-        this.objectMapper = new ObjectMapper()
-                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        this.objectMapper = JsonMapper.builder()
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .build();
         this.baseUrl = baseUrl;
     }
 
@@ -59,7 +61,7 @@ public class OpenLibraryBookSearchService implements BookSearchService {
         var targetUri = URI.create(baseUrl + "isbn/" + isbn.value() + ".json");
         try {
             var response = getFollowingRedirects(targetUri);
-            int status = response.statusCode();
+            int status = response.getStatusCode().value();
             if (status == 404) {
                 throw new BookNotFoundException(isbn);
             }
@@ -69,16 +71,11 @@ public class OpenLibraryBookSearchService implements BookSearchService {
                 throw new BookSearchException(
                         "failed to search book, upstream returned status " + status);
             }
-            var result = objectMapper.readValue(response.body(), OpenLibraryIsbnSearchResult.class);
+            var result = objectMapper.readValue(response.getBody(), OpenLibraryIsbnSearchResult.class);
             LOGGER.log(Level.FINEST, "Book search result: {0}", result);
             return new BookInformation(result.title());
-        } catch (IOException e) {
+        } catch (RestClientException e) {
             LOGGER.log(Level.SEVERE, "network error searching isbn {0}: {1}",
-                    new Object[]{isbn.value(), e.getMessage()});
-            throw new BookSearchException("failed to search book for isbn: " + isbn.value(), e);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            LOGGER.log(Level.SEVERE, "interrupted searching isbn {0}: {1}",
                     new Object[]{isbn.value(), e.getMessage()});
             throw new BookSearchException("failed to search book for isbn: " + isbn.value(), e);
         }
@@ -87,30 +84,39 @@ public class OpenLibraryBookSearchService implements BookSearchService {
     /**
      * Performs the GET, transparently following HTTP redirects. Open Library's
      * {@code /isbn/{isbn}.json} endpoint answers with a 302 to the canonical
-     * {@code /books/{key}.json} location, which the client (configured with
-     * {@code Redirect.NEVER}) does not follow on its own. The {@code requestUri}
-     * is kept so a relative {@code Location} header can be resolved against it.
+     * {@code /books/{key}.json} location, which the client (backed by a
+     * {@link JdkClientHttpRequestFactory} with redirects disabled) does not follow
+     * on its own. The {@code requestUri} is kept so a relative {@code Location}
+     * header can be resolved against it.
      */
-    private HttpResponse<String> getFollowingRedirects(URI requestUri) throws IOException, InterruptedException {
+    private ResponseEntity<String> getFollowingRedirects(URI requestUri) {
         var response = get(requestUri);
         int redirects = 0;
-        while (isRedirect(response.statusCode()) && redirects < MAX_REDIRECTS) {
-            Optional<String> location = response.headers().firstValue("Location");
-            if (location.isEmpty()) {
+        while (isRedirect(response.getStatusCode().value()) && redirects < MAX_REDIRECTS) {
+            URI location = response.getHeaders().getLocation();
+            if (location == null) {
                 return response;
             }
             redirects++;
-            response = get(requestUri.resolve(location.get()));
+            response = get(requestUri.resolve(location));
         }
         return response;
     }
 
-    private HttpResponse<String> get(URI uri) throws IOException, InterruptedException {
-        HttpRequest request = HttpRequest.newBuilder(uri)
-                .header("Accept", "application/json")
-                .GET()
-                .build();
-        return client.send(request, HttpResponse.BodyHandlers.ofString());
+    private ResponseEntity<String> get(URI uri) {
+        try {
+            return restClient.get()
+                    .uri(uri)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .retrieve()
+                    .toEntity(String.class);
+        } catch (RestClientResponseException e) {
+            // 4xx/5xx are surfaced as an exception by retrieve(); turn them back
+            // into a ResponseEntity so the caller can map the status itself.
+            return ResponseEntity.status(e.getStatusCode())
+                    .headers(e.getResponseHeaders())
+                    .body(e.getResponseBodyAsString());
+        }
     }
 
     private static boolean isRedirect(int status) {
