@@ -8,6 +8,8 @@ import com.example.library.catalog.domain.Isbn;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
@@ -16,8 +18,6 @@ import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.net.http.HttpClient;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Open Library adapter implementing the {@link BookSearchService} domain port,
@@ -25,7 +25,7 @@ import java.util.logging.Logger;
  */
 @Component
 public class OpenLibraryBookSearchService implements BookSearchService {
-    private static final Logger LOGGER = Logger.getLogger(OpenLibraryBookSearchService.class.getName());
+    private static final Logger LOGGER = LoggerFactory.getLogger(OpenLibraryBookSearchService.class);
 
     /** The default Open Library API base URL. */
     public static final String DEFAULT_BASE_URL = "https://openlibrary.org/";
@@ -63,19 +63,19 @@ public class OpenLibraryBookSearchService implements BookSearchService {
                     .accept(MediaType.APPLICATION_JSON)
                     .retrieve()
                     .body(OpenLibraryIsbnSearchResult.class);
-            LOGGER.log(Level.FINEST, "Book search result: {0}", result);
+            LOGGER.debug("Book search result: {}", result);
             return new BookInformation(result.title());
         } catch (RestClientResponseException e) {
             if (e.getStatusCode().value() == 404) {
                 throw new BookNotFoundException(isbn);
             }
-            LOGGER.log(Level.WARNING, "OpenLibrary returned unexpected status {0} for isbn {1}",
-                    new Object[]{e.getStatusCode().value(), isbn.value()});
+            LOGGER.warn("OpenLibrary returned unexpected status {} for isbn {}",
+                    e.getStatusCode().value(), isbn.value());
             throw new BookSearchException(
                     "failed to search book, upstream returned status " + e.getStatusCode().value());
         } catch (RestClientException e) {
-            LOGGER.log(Level.SEVERE, "network error searching isbn {0}: {1}",
-                    new Object[]{isbn.value(), e.getMessage()});
+            LOGGER.error("network error searching isbn {}: {}",
+                    isbn.value(), e.getMessage());
             throw new BookSearchException("failed to search book for isbn: " + isbn.value(), e);
         }
     }

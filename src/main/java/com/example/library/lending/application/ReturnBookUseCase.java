@@ -5,14 +5,13 @@ import com.example.library.lending.domain.Loan;
 import com.example.library.lending.domain.LoanClosed;
 import com.example.library.lending.domain.LoanId;
 import com.example.library.lending.domain.LoanRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
-
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 @UseCase
 public class ReturnBookUseCase {
-    private static final Logger LOGGER = Logger.getLogger(ReturnBookUseCase.class.getName());
+    private static final Logger LOGGER = LoggerFactory.getLogger(ReturnBookUseCase.class);
     private final LoanRepository loanRepository;
     private final ApplicationEventPublisher events;
 
@@ -27,7 +26,7 @@ public class ReturnBookUseCase {
         loan.returned();
         loanRepository.save(loan);
 
-        LOGGER.log(Level.INFO, "firing returned event for loan with id = " + loanId);
+        LOGGER.info("firing returned event for loan with id = {}", loanId);
         events.publishEvent(new LoanClosed(loan.copyId()));
     }
 }

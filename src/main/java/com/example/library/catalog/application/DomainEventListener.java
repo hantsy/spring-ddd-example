@@ -6,11 +6,10 @@ import com.example.library.catalog.domain.CopyNotFoundException;
 import com.example.library.catalog.domain.CopyRepository;
 import com.example.library.lending.domain.LoanClosed;
 import com.example.library.lending.domain.LoanCreated;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
-
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Reacts to lending domain events to keep the catalog copy availability in sync.
@@ -21,7 +20,7 @@ import java.util.logging.Logger;
  */
 @Component
 public class DomainEventListener {
-    private static final Logger LOGGER = Logger.getLogger(DomainEventListener.class.getName());
+    private static final Logger LOGGER = LoggerFactory.getLogger(DomainEventListener.class);
     private final CopyRepository copyRepository;
 
     public DomainEventListener(CopyRepository copyRepository) {
@@ -30,7 +29,7 @@ public class DomainEventListener {
 
     @ApplicationModuleListener
     public void onLoanCreated(LoanCreated event) {
-        LOGGER.log(Level.INFO, "handling LoanCreated:{0}", new Object[]{event});
+        LOGGER.info("handling LoanCreated:{}", event);
         var copyId = new CopyId(event.copyId().id());
         Copy copy = copyRepository.findById(copyId).orElseThrow(() -> new CopyNotFoundException(copyId));
         copy.makeUnavailable();
@@ -39,7 +38,7 @@ public class DomainEventListener {
 
     @ApplicationModuleListener
     public void onLoanClosed(LoanClosed event) {
-        LOGGER.log(Level.INFO, "handling LoanClosed:{0}", new Object[]{event});
+        LOGGER.info("handling LoanClosed:{}", event);
         var copyId = new CopyId(event.copyId().id());
         Copy copy = copyRepository.findById(copyId).orElseThrow(() -> new CopyNotFoundException(copyId));
         copy.makeAvailable();

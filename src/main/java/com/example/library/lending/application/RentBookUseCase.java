@@ -6,17 +6,17 @@ import com.example.library.lending.domain.Loan;
 import com.example.library.lending.domain.LoanCreated;
 import com.example.library.lending.domain.LoanRepository;
 import com.example.library.lending.domain.UserId;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 @UseCase
 public class RentBookUseCase {
-    private static final Logger LOGGER = Logger.getLogger(RentBookUseCase.class.getName());
+    private static final Logger LOGGER = LoggerFactory.getLogger(RentBookUseCase.class);
     private final LoanRepository loanRepository;
     private final CopyAvailabilityValidator copyAvailabilityValidator;
     private final ApplicationEventPublisher events;
@@ -37,7 +37,7 @@ public class RentBookUseCase {
         var now = LocalDateTime.now(clock);
         loanRepository.save(new Loan(copyId, userId, now, LocalDate.now(clock).plusDays(30)));
 
-        LOGGER.log(Level.INFO, "firing LoanCreated with copy id = " + copyId);
+        LOGGER.info("firing LoanCreated with copy id = {}", copyId);
         events.publishEvent(new LoanCreated(copyId));
     }
 }
