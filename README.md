@@ -23,7 +23,7 @@ Notable DDD / Modulith features:
 
 ## Prerequisites
 
-- Java 21+
+- Java 25+
 - Maven 3.9+ (or use the included Maven wrapper)
 
 ## Build
