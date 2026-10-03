@@ -19,7 +19,7 @@
 
     <properties>
         <java.version>25</java.version>
-        <spring-modulith.version>2.2.0-M1</spring-modulith.version>
+        <spring-modulith.version>2.2.0-M2</spring-modulith.version>
         <commons-validator.version>1.11.0</commons-validator.version>
         <archunit.version>1.5.0</archunit.version>
         <wiremock.version>3.13.2</wiremock.version>
