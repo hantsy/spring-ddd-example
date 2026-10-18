@@ -7,7 +7,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 
 @SpringBootApplication
 @EnableAsync
-@Modulithic(sharedModules = "common")
+@Modulithic(sharedModules = "shared")
 public class LibraryApplication {
 
     public static void main(String[] args) {

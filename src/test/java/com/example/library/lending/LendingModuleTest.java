@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.modulith.test.ApplicationModuleTest;
 import org.springframework.modulith.test.Scenario;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -48,7 +49,7 @@ class LendingModuleTest {
     void returnBookPublishesLoanClosed(Scenario scenario) {
         var copyId = CopyId.of(UUID.randomUUID());
         var userId = new UserId();
-        var loan = loanRepository.save(new Loan(copyId, userId));
+        var loan = loanRepository.save(new Loan(copyId, userId, LocalDateTime.now()));
 
         scenario.stimulate(() -> returnBookUseCase.execute(loan.id()))
                 .andWaitForEventOfType(LoanClosed.class)

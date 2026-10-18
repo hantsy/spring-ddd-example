@@ -1,4 +1,4 @@
-package com.example.library.common;
+package com.example.library.shared;
 
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 public class LoggedInterceptor {
     private static final Logger logger = LoggerFactory.getLogger(LoggedInterceptor.class);
 
-    @Around("@within(com.example.library.common.UseCase)")
+    @Around("@within(com.example.library.shared.UseCase)")
     public Object logMethodCall(ProceedingJoinPoint joinPoint) throws Throwable {
         Object[] params = joinPoint.getArgs();
         String methodName = joinPoint.getSignature().getName();

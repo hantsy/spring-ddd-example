@@ -1,7 +1,7 @@
 /**
- * The lending module depends only on the shared kernel ({@code common}).
+ * The lending module depends only on the shared kernel ({@code shared}).
  */
-@ApplicationModule(allowedDependencies = "common")
+@ApplicationModule(allowedDependencies = "shared")
 package com.example.library.lending;
 
 import org.springframework.modulith.ApplicationModule;

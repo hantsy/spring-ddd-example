@@ -1,4 +1,4 @@
-package com.example.library.common;
+package com.example.library.shared;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;

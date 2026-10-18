@@ -12,7 +12,7 @@ Two bounded contexts, modelled as Spring Modulith application modules, plus a sh
 
 - **`catalog`** — `Book`, `Copy`, ISBN search (backed by an Open Library adapter)
 - **`lending`** — `Loan`, overdue fees, and the `LoanCreated` / `LoanClosed` domain events
-- **`common`** — the shared kernel (`DomainException`, the `@UseCase` stereotype, `Clock`, and the logging aspect)
+- **`shared`** — the shared kernel (`DomainException`, the `@UseCase` stereotype, `Clock`, and the logging aspect)
 
 Notable DDD / Modulith features:
 

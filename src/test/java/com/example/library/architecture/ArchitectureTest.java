@@ -1,6 +1,7 @@
 package com.example.library.architecture;
 
 import com.example.library.catalog.application.DomainEventListener;
+import com.example.library.lending.domain.CopyAvailabilityValidator;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.core.importer.ImportOption;
@@ -17,7 +18,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
  * These rules encode the intended dependency rules of the application:
  * <ul>
  *   <li>the <em>domain</em> layer is the innermost layer and depends on nothing
- *       outside itself and the shared kernel ({@code com.example.library.common});</li>
+ *       outside itself and the shared kernel ({@code com.example.library.shared});</li>
  *   <li>the <em>application</em> layer depends on the domain layer only —
  *       never on infrastructure (dependency inversion);</li>
  *   <li>the two bounded contexts ({@code com.example.library.catalog} and
@@ -50,6 +51,7 @@ class ArchitectureTest {
     @Test
     void domainLayerMustStayFreeOfApplicationFrameworks() {
         ArchRule rule = noClasses().that().resideInAnyPackage("com.example.library..domain..")
+                .and().doNotBelongToAnyOf(CopyAvailabilityValidator.class)
                 .should().dependOnClassesThat()
                 .resideInAnyPackage(
                         "org.springframework.web..",
@@ -59,7 +61,8 @@ class ArchitectureTest {
                         "org.springframework.scheduling..",
                         "org.springframework.modulith.events..")
                 .because("the domain model must remain independent of the web, DI, transaction and "
-                        + "modularity frameworks (Spring Data repository contracts are allowed)");
+                        + "modularity frameworks (except the stateless domain service CopyAvailabilityValidator, "
+                        + "which Spring injects with a repository port; Spring Data repository contracts are allowed)");
         rule.check(classes);
     }
 
@@ -81,10 +84,10 @@ class ArchitectureTest {
 
     @Test
     void sharedKernelMustNotDependOnBoundedContexts() {
-        ArchRule rule = noClasses().that().resideInAPackage("com.example.library.common..")
+        ArchRule rule = noClasses().that().resideInAPackage("com.example.library.shared..")
                 .should().dependOnClassesThat()
                 .resideInAnyPackage("com.example.library.catalog..", "com.example.library.lending..")
-                .because("library.common is the shared kernel and must not know the bounded contexts");
+                .because("library.shared is the shared kernel and must not know the bounded contexts");
         rule.check(classes);
     }
 

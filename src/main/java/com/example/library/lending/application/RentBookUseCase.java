@@ -1,17 +1,12 @@
 package com.example.library.lending.application;
 
-import com.example.library.common.UseCase;
-import com.example.library.lending.domain.CopyId;
-import com.example.library.lending.domain.Loan;
-import com.example.library.lending.domain.LoanCreated;
-import com.example.library.lending.domain.LoanRepository;
-import com.example.library.lending.domain.UserId;
+import com.example.library.shared.UseCase;
+import com.example.library.lending.domain.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.Clock;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @UseCase
@@ -35,7 +30,7 @@ public class RentBookUseCase {
     public void execute(CopyId copyId, UserId userId) {
         copyAvailabilityValidator.checkAvailable(copyId);
         var now = LocalDateTime.now(clock);
-        loanRepository.save(new Loan(copyId, userId, now, LocalDate.now(clock).plusDays(30)));
+        loanRepository.save(new Loan(copyId, userId, now));
 
         LOGGER.info("firing LoanCreated with copy id = {}", copyId);
         events.publishEvent(new LoanCreated(copyId));
