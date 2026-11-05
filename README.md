@@ -6,6 +6,8 @@ A **Library** example demonstrating how to implement a modular DDD application w
 
 The idea comes from the [Spring I/O 2024 talk: Implementing Domain-Driven Design with Spring](https://www.youtube.com/watch?v=VGhg6Tfxb60) by [Maciej Walkowiak](https://github.com/maciejwalkowiak).
 
+[Applying DDD with Spring Boot](docs/applying-ddd-with-spring.md).
+
 ## Architecture
 
 Two bounded contexts, modelled as Spring Modulith application modules, plus a shared kernel:
